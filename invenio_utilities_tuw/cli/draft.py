@@ -1,17 +1,12 @@
-"""CLI commands for Invenio-Utilities-TUW."""
+"""Management commands for drafts."""
 
 import json
 import os
 import sys
-from os.path import basename, join, isfile, isdir
+from os.path import basename, isdir, isfile, join
 
 import click
 from flask.cli import with_appcontext
-from flask_principal import Identity
-from invenio_access import any_user
-from invenio_access.utils import get_identity
-from invenio_accounts import current_accounts
-from invenio_pidstore.models import PersistentIdentifier
 from invenio_rdm_records.records.models import DraftMetadata
 from invenio_rdm_records.services.services import (
     BibliographicDraftFilesService as DraftFileService,
@@ -20,50 +15,12 @@ from invenio_rdm_records.services.services import (
     BibliographicRecordService as RecordService,
 )
 
-
-def create_record_from_metadata(metadata_file_path, identity):
-    """Create a draft from the metadata in the specified JSON file."""
-    metadata = None
-    with open(metadata_file_path, "r") as metadata_file:
-        metadata = json.load(metadata_file)
-
-    if metadata is None:
-        raise Exception("not a valid json file: %s" % metadata_file_path)
-
-    service = RecordService()
-    draft = service.create(identity=identity, data=metadata)
-    return draft
-
-
-def get_identity_for_user(user):
-    """Get the Identity for the user specified via email or ID."""
-    identity = None
-    if user is not None:
-        # note: this seems like the canonical way to go
-        #       'as_user' can be either an integer (id) or email address
-        u = current_accounts.datastore.get_user(user)
-        if u is not None:
-            identity = get_identity(u)
-        else:
-            raise LookupError("user not found: %s" % user)
-
-    if identity is None:
-        identity = Identity(1)
-        identity.provides.add(any_user)
-
-    return identity
-
-
-def convert_to_recid(pid_value, pid_type):
-    if pid_type != "recid":
-        pid_value = (
-            PersistentIdentifier.query.filter_by(pid_value=pid, pid_type=pid_type)
-            .first()
-            .pid_value
-        )
-
-    return pid_value
-
+from .utils import (
+    convert_to_recid,
+    create_record_from_metadata,
+    get_identity_for_user,
+    patch_metadata,
+)
 
 option_as_user = click.option(
     "--as-user",
@@ -93,25 +50,36 @@ option_pid_value = click.option(
 
 
 @click.group()
-def utilities():
-    """Utility commands for InvenioRDM."""
-    pass
-
-
-@utilities.group()
 def draft():
     """Utility commands for creation and publication of drafts."""
     pass
 
 
-@draft.group()
-def files():
-    """Manage files deposited with the draft."""
-    pass
+@draft.command("list")
+@option_as_user
+@with_appcontext
+def list_draft(user):
+    """List all drafts accessible to the given user."""
+    identity = get_identity_for_user(user)
+    service = RecordService()
+    recids = [
+        dm.json["id"]
+        for dm in DraftMetadata.query.all()
+        if dm is not None and dm.json is not None
+    ]
+
+    for recid in recids:
+        try:
+            draft = service.read_draft(id_=recid, identity=identity)
+            click.secho(
+                "{} - {}".format(draft.id, draft.data["metadata"]["title"]), fg="green"
+            )
+        except:
+            pass
 
 
 @draft.command("create")
-@click.argument("metadata_path")
+@click.argument("metadata_path", type=click.Path(exists=True))
 @option_as_user
 @click.option(
     "--publish",
@@ -122,7 +90,16 @@ def files():
 )
 @with_appcontext
 def create_draft(metadata_path, publish, user):
-    """Create a new record draft with the specified metadata."""
+    """Create a new record draft with the specified metadata.
+
+    The specified metadata path can either point to a JSON file containing the metadata,
+    or it can point to a directory.
+    In the former case, no files will be added to the created draft.
+    In the latter case, it is assumed that the directory contains a file called
+    "metadata.json".
+    Further, all files contained in the "files/" subdirectory will be added to the
+    draft, if such a subdirectory exists.
+    """
     recid = None
     identity = get_identity_for_user(user)
 
@@ -140,15 +117,14 @@ def create_draft(metadata_path, publish, user):
         recid = draft["id"]
         file_names = []
         if isdir(deposit_files_path):
-            dir_contents = os.listdir(deposit_files_path)
-            file_names = [basename(fn) for fn in dir_contents if isfile(join(deposit_files_path, fn))]
-            if len(dir_contents) != len(file_names):
-                ignored = [basename(fn) for fn in dir_contents if not isfile(join(deposit_files_path, fn))]
-                click.secho(
-                    "ignored in '{}': {}".format(deposit_files_path, ignored),
-                    fg="red",
-                    err=True,
-                )
+            exists = lambda fn: isfile(join(deposit_files_path, fn))
+            content = os.listdir(deposit_files_path)
+            file_names = [basename(fn) for fn in content if exists(fn)]
+
+            if len(content) != len(file_names):
+                ignored = [basename(fn) for fn in content if not exists(fn)]
+                msg = "ignored in '{}': {}".format(deposit_files_path, ignored)
+                click.secho(msg, fg="red", err=True)
 
         service = DraftFileService()
         service.init_files(
@@ -173,40 +149,30 @@ def create_draft(metadata_path, publish, user):
     click.secho(recid, fg="green")
 
 
-@draft.command("list")
-@option_as_user
-@with_appcontext
-def create_draft(user):
-    """List all drafts accessible to the given user."""
-    identity = get_identity_for_user(user)
-    service = RecordService()
-    recids = [
-        dm.json["id"]
-        for dm in DraftMetadata.query.all()
-        if dm is not None and dm.json is not None
-    ]
-
-    for recid in recids:
-        try:
-            draft = service.read_draft(id_=recid, identity=identity)
-            click.secho(
-                "{} - {}".format(draft.id, draft.data["metadata"]["title"]), fg="green"
-            )
-        except:
-            pass
-
-
-@draft.command("delete")
+@draft.command("update")
+@click.argument("metadata_file", type=click.File("r"))
 @option_pid_value
 @option_pid_type
 @option_as_user
+@click.option(
+    "--patch/--replace",
+    "-p/-r",
+    default=False,
+    help="replace the draft's metadata entirely, or leave unmentioned fields as-is",
+)
 @with_appcontext
-def publish_draft(pid, pid_type, user):
-    """Delete the specified draft."""
+def update_draft(metadata_file, pid, pid_type, user, patch):
+    """Update the specified draft's metadata."""
     pid = convert_to_recid(pid, pid_type)
     identity = get_identity_for_user(user)
     service = RecordService()
-    service.delete_draft(id_=pid, identity=identity)
+    metadata = json.load(metadata_file)
+
+    if patch:
+        draft_data = service.read_draft(id_=pid, identity=identity).data.copy()
+        metadata = patch_metadata(draft_data, metadata)
+
+    service.update_draft(id_=pid, identity=identity, data=metadata)
     click.secho(pid, fg="green")
 
 
@@ -222,6 +188,26 @@ def publish_draft(pid, pid_type, user):
     service = RecordService()
     service.publish(id_=pid, identity=identity)
     click.secho(pid, fg="green")
+
+
+@draft.command("delete")
+@option_pid_value
+@option_pid_type
+@option_as_user
+@with_appcontext
+def delete_draft(pid, pid_type, user):
+    """Delete the specified draft."""
+    pid = convert_to_recid(pid, pid_type)
+    identity = get_identity_for_user(user)
+    service = RecordService()
+    service.delete_draft(id_=pid, identity=identity)
+    click.secho(pid, fg="red")
+
+
+@draft.group()
+def files():
+    """Manage files deposited with the draft."""
+    pass
 
 
 @files.command("add")
@@ -240,19 +226,14 @@ def add_files(filepaths, pid, pid_type, user):
     for file_path in filepaths:
         if isdir(file_path):
             # add all files (no recursion into sub-dirs) from the directory
-            dir_contents = os.listdir(file_path)
-            file_names = [
-                basename(fn) for fn in dir_contents if isfile(join(file_path, fn))
-            ]
-            if len(dir_contents) != len(file_names):
-                ignored = [
-                    basename(fn)
-                    for fn in dir_contents
-                    if not isfile(join(file_path, fn))
-                ]
-                click.secho(
-                    "ignored in '{}': {}".format(file_path, ignored), fg="red", err=True
-                )
+            exists = lambda fn: isfile(join(file_path, fn))
+            content = os.listdir(file_path)
+            file_names = [basename(fn) for fn in content if exists(fn)]
+
+            if len(content) != len(file_names):
+                ignored = [basename(fn) for fn in content if not exists(fn)]
+                msg = "ignored in '{}': {}".format(file_path, ignored)
+                click.secho(msg, fg="red", err=True)
 
             paths_ = [join(file_path, fn) for fn in file_names]
             paths.extend(paths_)
@@ -270,7 +251,7 @@ def add_files(filepaths, pid, pid_type, user):
     )
     for fp in paths:
         fn = basename(fp)
-        with open(file_path, "rb") as deposit_file:
+        with open(fp, "rb") as deposit_file:
             service.set_file_content(
                 id_=recid, file_key=fn, identity=identity, stream=deposit_file
             )
@@ -307,4 +288,4 @@ def list_files(pid, pid_type, user):
     service = DraftFileService()
     file_results = service.list_files(id_=recid, identity=identity)
     for f in file_results.entries:
-        click.echo(f)
+        click.echo("{}: {}".format(f["key"], f))
