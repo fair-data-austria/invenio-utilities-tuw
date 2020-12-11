@@ -3,6 +3,7 @@
 import click
 
 from .draft import draft
+from .files import files
 from .record import record
 from .users import users
 
@@ -14,5 +15,6 @@ def utilities():
 
 
 utilities.add_command(draft)
+utilities.add_command(files)
 utilities.add_command(record)
 utilities.add_command(users)
