@@ -7,6 +7,7 @@ from os.path import basename, isdir, isfile, join
 
 import click
 from flask.cli import with_appcontext
+from invenio_files_rest.models import ObjectVersion
 from invenio_rdm_records.records.models import DraftMetadata
 from invenio_rdm_records.services.services import (
     BibliographicDraftFilesService as DraftFileService,
@@ -58,7 +59,7 @@ def draft():
 @draft.command("list")
 @option_as_user
 @with_appcontext
-def list_draft(user):
+def list_drafts(user):
     """List all drafts accessible to the given user."""
     identity = get_identity_for_user(user)
     service = RecordService()
@@ -156,9 +157,9 @@ def create_draft(metadata_path, publish, user):
 @option_as_user
 @click.option(
     "--patch/--replace",
-    "-p/-r",
+    "-P/-R",
     default=False,
-    help="replace the draft's metadata entirely, or leave unmentioned fields as-is",
+    help="replace the draft's metadata entirely, or leave unmentioned fields as-is (default: replace)",
 )
 @with_appcontext
 def update_draft(metadata_file, pid, pid_type, user, patch):
@@ -274,6 +275,8 @@ def remove_files(filekeys, pid, pid_type, user):
 
     for file_key in filekeys:
         service.delete_file(id_=recid, file_key=file_key, identity=identity)
+        click.secho(file_key, fg="red")
+        # TODO: add option for hard-deleting files
 
 
 @files.command("list")
@@ -288,4 +291,6 @@ def list_files(pid, pid_type, user):
     service = DraftFileService()
     file_results = service.list_files(id_=recid, identity=identity)
     for f in file_results.entries:
-        click.echo("{}: {}".format(f["key"], f))
+        ov = ObjectVersion.get(f["bucket_id"], f["key"], f["version_id"])
+        fi = ov.file
+        click.secho("{}\t{}\t{}".format(ov.key, fi.uri, fi.checksum), fg="green")

@@ -55,8 +55,8 @@ def get_identity_for_user(user):
 
     if identity is None:
         identity = Identity(1)
-        identity.provides.add(any_user)
 
+    identity.provides.add(any_user)
     return identity
 
 
