@@ -4,9 +4,13 @@ import json
 
 import click
 from flask.cli import with_appcontext
+from invenio_files_rest.models import ObjectVersion
 from invenio_rdm_records.records.models import RecordMetadata
 from invenio_rdm_records.services.services import (
     BibliographicRecordService as RecordService,
+)
+from invenio_rdm_records.services.services import (
+    BibliographicRecordFilesService as RecordFileService,
 )
 
 from .utils import (
@@ -112,3 +116,20 @@ def delete_record(pid, pid_type, user):
     service.delete(id_=recid, identity=identity)
 
     click.secho(recid, fg="red")
+
+
+@record.command("files")
+@option_pid_value
+@option_pid_type
+@option_as_user
+@with_appcontext
+def list_files(pid, pid_type, user):
+    """Show a list of files deposited with the record."""
+    recid = convert_to_recid(pid, pid_type)
+    identity = get_identity_for_user(user)
+    service = RecordFileService()
+    file_results = service.list_files(id_=recid, identity=identity)
+    for f in file_results.entries:
+        ov = ObjectVersion.get(f["bucket_id"], f["key"], f["version_id"])
+        fi = ov.file
+        click.secho("{}\t{}\t{}".format(ov.key, fi.uri, fi.checksum), fg="green")
