@@ -16,17 +16,18 @@ from invenio_utilities_tuw import InvenioUtilitiesTUW
 def test_version():
     """Test version import."""
     from invenio_utilities_tuw import __version__
+
     assert __version__
 
 
 def test_init():
     """Test extension initialization."""
-    app = Flask('testapp')
+    app = Flask("testapp")
     ext = InvenioUtilitiesTUW(app)
-    assert 'invenio-utilities-tuw' in app.extensions
+    assert "invenio-utilities-tuw" in app.extensions
 
-    app = Flask('testapp')
+    app = Flask("testapp")
     ext = InvenioUtilitiesTUW()
-    assert 'invenio-utilities-tuw' not in app.extensions
+    assert "invenio-utilities-tuw" not in app.extensions
     ext.init_app(app)
-    assert 'invenio-utilities-tuw' in app.extensions
+    assert "invenio-utilities-tuw" in app.extensions
