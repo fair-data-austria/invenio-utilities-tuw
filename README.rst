@@ -9,21 +9,22 @@
  Invenio-Utilities-TUW
 =======================
 
-.. image:: https://github.com/inveniosoftware/invenio-utilities-tuw/workflows/CI/badge.svg
-        :target: https://github.com/inveniosoftware/invenio-utilities-tuw/actions?query=workflow%3ACI
+.. image:: https://img.shields.io/github/tag/fair-data-austria/invenio-utilities-tuw.svg
+        :target: https://github.com/fair-data-austria/invenio-utilities-tuw/releases
 
-.. image:: https://img.shields.io/github/tag/inveniosoftware/invenio-utilities-tuw.svg
-        :target: https://github.com/inveniosoftware/invenio-utilities-tuw/releases
+.. image:: https://img.shields.io/github/license/fair-data-austria/invenio-utilities-tuw.svg
+        :target: https://github.com/fair-data-austria/invenio-utilities-tuw/blob/master/LICENSE
 
-.. image:: https://img.shields.io/pypi/dm/invenio-utilities-tuw.svg
-        :target: https://pypi.python.org/pypi/invenio-utilities-tuw
+.. image:: https://img.shields.io/badge/code%20style-black-000000.svg
+    :target: https://github.com/psf/black
 
-.. image:: https://img.shields.io/github/license/inveniosoftware/invenio-utilities-tuw.svg
-        :target: https://github.com/inveniosoftware/invenio-utilities-tuw/blob/master/LICENSE
 
-Some utilities for InvenioRDM.
+Some CLI utilities (``invenio tuw ...``) for InvenioRDM of varying quality and usefulness.
 
-TODO: Please provide feature overview of module
+Features:
 
-Further documentation is available on
-https://invenio-utilities-tuw.readthedocs.io/
+* create, update and publish drafts and records
+* list records and drafts accessible to certain users
+* manage deposited files for drafts
+* list registered users
+* etc.
