@@ -7,9 +7,8 @@ from invenio_access import any_user
 from invenio_access.utils import get_identity
 from invenio_accounts import current_accounts
 from invenio_pidstore.models import PersistentIdentifier
-from invenio_rdm_records.services.services import (
-    BibliographicRecordService as RecordService,
-)
+
+from ..utils import get_record_service
 
 
 def create_record_from_metadata(metadata_file_path, identity):
@@ -21,7 +20,7 @@ def create_record_from_metadata(metadata_file_path, identity):
     if metadata is None:
         raise Exception("not a valid json file: %s" % metadata_file_path)
 
-    service = RecordService()
+    service = get_record_service()
     draft = service.create(identity=identity, data=metadata)
     return draft
 
@@ -60,13 +59,25 @@ def get_identity_for_user(user):
     return identity
 
 
+def get_object_uuid(pid_value, pid_type):
+    """Fetch the UUID of the referenced object."""
+    uuid = (
+        PersistentIdentifier.query.filter_by(pid_value=pid_value, pid_type=pid_type)
+        .first()
+        .object_uuid
+    )
+
+    return uuid
+
+
 def convert_to_recid(pid_value, pid_type):
     """Fetch the recid of the referenced object."""
     if pid_type != "recid":
-        pid_value = (
-            PersistentIdentifier.query.filter_by(pid_value=pid_value, pid_type=pid_type)
-            .first()
-            .pid_value
+        object_uuid = get_object_uuid(pid_value=pid_value, pid_type=pid_type)
+        query = PersistentIdentifier.query.filter_by(
+            object_uuid=object_uuid,
+            pid_type="recid",
         )
+        pid_value = query.first().pid_value
 
     return pid_value

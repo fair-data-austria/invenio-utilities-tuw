@@ -9,13 +9,8 @@ import click
 from flask.cli import with_appcontext
 from invenio_files_rest.models import ObjectVersion
 from invenio_rdm_records.records.models import DraftMetadata
-from invenio_rdm_records.services.services import (
-    BibliographicDraftFilesService as DraftFileService,
-)
-from invenio_rdm_records.services.services import (
-    BibliographicRecordService as RecordService,
-)
 
+from ..utils import get_draft_file_service, get_record_service
 from .utils import (
     convert_to_recid,
     create_record_from_metadata,
@@ -51,18 +46,18 @@ option_pid_value = click.option(
 
 
 @click.group()
-def draft():
+def drafts():
     """Utility commands for creation and publication of drafts."""
     pass
 
 
-@draft.command("list")
+@drafts.command("list")
 @option_as_user
 @with_appcontext
 def list_drafts(user):
     """List all drafts accessible to the given user."""
     identity = get_identity_for_user(user)
-    service = RecordService()
+    service = get_record_service()
     recids = [
         dm.json["id"]
         for dm in DraftMetadata.query.all()
@@ -79,7 +74,7 @@ def list_drafts(user):
             pass
 
 
-@draft.command("create")
+@drafts.command("create")
 @click.argument("metadata_path", type=click.Path(exists=True))
 @option_as_user
 @click.option(
@@ -127,7 +122,7 @@ def create_draft(metadata_path, publish, user):
                 msg = "ignored in '{}': {}".format(deposit_files_path, ignored)
                 click.secho(msg, fg="red", err=True)
 
-        service = DraftFileService()
+        service = get_draft_file_service()
         service.init_files(
             id_=recid, identity=identity, data=[{"key": fn} for fn in file_names]
         )
@@ -144,13 +139,13 @@ def create_draft(metadata_path, publish, user):
         raise Exception("neither a file nor a directory: %s" % metadata_path)
 
     if publish:
-        service = RecordService()
+        service = get_record_service()
         service.publish(id_=recid, identity=identity)
 
     click.secho(recid, fg="green")
 
 
-@draft.command("update")
+@drafts.command("update")
 @click.argument("metadata_file", type=click.File("r"))
 @option_pid_value
 @option_pid_type
@@ -166,7 +161,7 @@ def update_draft(metadata_file, pid, pid_type, user, patch):
     """Update the specified draft's metadata."""
     pid = convert_to_recid(pid, pid_type)
     identity = get_identity_for_user(user)
-    service = RecordService()
+    service = get_record_service()
     metadata = json.load(metadata_file)
 
     if patch:
@@ -177,7 +172,7 @@ def update_draft(metadata_file, pid, pid_type, user, patch):
     click.secho(pid, fg="green")
 
 
-@draft.command("publish")
+@drafts.command("publish")
 @option_pid_value
 @option_pid_type
 @option_as_user
@@ -186,12 +181,12 @@ def publish_draft(pid, pid_type, user):
     """Publish the specified draft."""
     pid = convert_to_recid(pid, pid_type)
     identity = get_identity_for_user(user)
-    service = RecordService()
+    service = get_record_service()
     service.publish(id_=pid, identity=identity)
     click.secho(pid, fg="green")
 
 
-@draft.command("delete")
+@drafts.command("delete")
 @option_pid_value
 @option_pid_type
 @option_as_user
@@ -200,12 +195,12 @@ def delete_draft(pid, pid_type, user):
     """Delete the specified draft."""
     pid = convert_to_recid(pid, pid_type)
     identity = get_identity_for_user(user)
-    service = RecordService()
+    service = get_record_service()
     service.delete_draft(id_=pid, identity=identity)
     click.secho(pid, fg="red")
 
 
-@draft.group()
+@drafts.group()
 def files():
     """Manage files deposited with the draft."""
     pass
@@ -221,7 +216,7 @@ def add_files(filepaths, pid, pid_type, user):
     """Add the specified files to the draft."""
     recid = convert_to_recid(pid, pid_type)
     identity = get_identity_for_user(user)
-    service = DraftFileService()
+    service = get_draft_file_service()
 
     paths = []
     for file_path in filepaths:
@@ -271,7 +266,7 @@ def remove_files(filekeys, pid, pid_type, user):
     """Remove the deposited files."""
     recid = convert_to_recid(pid, pid_type)
     identity = get_identity_for_user(user)
-    service = DraftFileService()
+    service = get_draft_file_service()
 
     for file_key in filekeys:
         service.delete_file(id_=recid, file_key=file_key, identity=identity)
@@ -288,7 +283,7 @@ def list_files(pid, pid_type, user):
     """Show a list of files deposited with the draft."""
     recid = convert_to_recid(pid, pid_type)
     identity = get_identity_for_user(user)
-    service = DraftFileService()
+    service = get_draft_file_service()
     file_results = service.list_files(id_=recid, identity=identity)
     for f in file_results.entries:
         ov = ObjectVersion.get(f["bucket_id"], f["key"], f["version_id"])

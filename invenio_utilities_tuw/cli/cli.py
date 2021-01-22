@@ -2,9 +2,9 @@
 
 import click
 
-from .draft import draft
+from .drafts import drafts
 from .files import files
-from .record import record
+from .records import records
 from .users import users
 
 
@@ -14,7 +14,7 @@ def utilities():
     pass
 
 
-utilities.add_command(draft)
+utilities.add_command(drafts)
 utilities.add_command(files)
-utilities.add_command(record)
+utilities.add_command(records)
 utilities.add_command(users)

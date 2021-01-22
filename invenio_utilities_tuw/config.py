@@ -8,11 +8,23 @@
 
 """Some utilities for InvenioRDM."""
 
-# TODO: This is an example file. Remove it if your package does not use any
-# extra configuration variables.
+from invenio_rdm_records.proxies import current_rdm_records
 
-UTILITIES_TUW_DEFAULT_VALUE = "foobar"
-"""Default value for the application."""
 
 UTILITIES_TUW_BASE_TEMPLATE = "invenio_utilities_tuw/base.html"
 """Default base template for the demo page."""
+
+UTILITIES_TUW_RECORD_SERVICE_FACTORY = (
+    lambda: current_rdm_records.records_service
+)
+"""Factory function for creating a RecordService."""
+
+UTILITIES_TUW_RECORD_FILES_SERVICE_FACTORY = (
+    lambda: current_rdm_records.record_files_service
+)
+"""Factory function for creating a RecordFileService."""
+
+UTILITIES_TUW_DRAFT_FILES_SERVICE_FACTORY = (
+    lambda: current_rdm_records.draft_files_service
+)
+"""Factory function for creating a DraftFileService."""

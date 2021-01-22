@@ -5,14 +5,11 @@ from collections import defaultdict
 import click
 from flask.cli import with_appcontext
 from invenio_db import db
-from invenio_files_rest.models import Bucket, ObjectVersion, FileInstance
-from invenio_rdm_records.records.models import RecordMetadata, DraftMetadata
-from invenio_rdm_records.services.services import (
-    BibliographicRecordService as RecordService,
-)
+from invenio_files_rest.models import Bucket, FileInstance, ObjectVersion
+from invenio_rdm_records.records.models import DraftMetadata, RecordMetadata
 
+from ..utils import get_record_service
 from .utils import convert_to_recid, get_identity_for_user
-
 
 option_as_user = click.option(
     "--as-user",
@@ -64,7 +61,7 @@ def list_deleted_files(user, pid, pid_type):
     (via its PID).
     """
     recid = convert_to_recid(pid, pid_type) if pid else None
-    service = RecordService()
+    service = get_record_service()
     identity = get_identity_for_user(user)
 
     # if a PID was specified, limit the cleaning to this record's bucket
@@ -106,7 +103,7 @@ def hard_delete_files(user, pid, pid_type):
     (via its PID).
     """
     recid = convert_to_recid(pid, pid_type) if pid else None
-    service = RecordService()
+    service = get_record_service()
     identity = get_identity_for_user(user)
 
     # if a PID was specified, limit the cleaning to this record's bucket
@@ -152,7 +149,13 @@ def list_orphan_files():
     """List files that aren't referenced in any records (anymore)."""
     # TODO iterate over all records & drafts, get their buckets
     #      and check which buckets from the db aren't listed
-    bucket_ids = set((r.bucket.id for r in (RecordMetadata.query.all() + DraftMetadata.query.all()) if r.bucket is not None))
+    bucket_ids = set(
+        (
+            r.bucket.id
+            for r in (RecordMetadata.query.all() + DraftMetadata.query.all())
+            if r.bucket is not None
+        )
+    )
     print(len(bucket_ids))
     buckets = Bucket.query.filter(~Bucket.id.in_(bucket_ids)).all()
     print(len(buckets))
@@ -171,9 +174,8 @@ def list_orphan_files():
 @with_appcontext
 def clean_files(user):
     """Remove files that do not have associated ObjectVersions (anymore)."""
-    service = RecordService()
+    service = get_record_service()
     identity = get_identity_for_user(user)
-    service = RecordService()
     service.require_permission(identity, "delete")
 
     for fi in (f for f in FileInstance.query.all() if not f.objects):
