@@ -37,8 +37,8 @@ setup_requires = [
 install_requires = [
     "invenio-i18n>=1.2.0",
     "invenio-access>=1.4.1",
-    "invenio-accounts>=1.3.1",
-    "invenio-rdm-records>=0.24",
+    "invenio-accounts>=1.4.0",
+    "invenio-rdm-records>=0.25.6",
     "sqlalchemy-continuum>=1.3.11",
     "invenio-search[elasticsearch7]>=1.4.0",
 ]
