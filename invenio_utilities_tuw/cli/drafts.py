@@ -8,7 +8,6 @@ from os.path import basename, isdir, isfile, join
 import click
 from flask.cli import with_appcontext
 from invenio_files_rest.models import ObjectVersion
-from invenio_rdm_records.records.models import DraftMetadata
 
 from ..utils import get_draft_file_service, get_record_service
 from .utils import (
@@ -60,7 +59,7 @@ def list_drafts(user):
     service = get_record_service()
     recids = [
         dm.json["id"]
-        for dm in DraftMetadata.query.all()
+        for dm in service.draft_cls.model_cls.query.all()
         if dm is not None and dm.json is not None
     ]
 
