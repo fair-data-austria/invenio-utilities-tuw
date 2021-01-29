@@ -17,7 +17,12 @@ option_as_user = click.option(
     metavar="USER",
     default=None,
     required=True,
-    help="email address of the user to impersonate for the task",
+    envvar="INVENIO_UTILITIES_TUW_USER",
+    help=(
+        "email address of the user to impersonate for the task; "
+        "can also be specified via the environment variable "
+        "INVENIO_UTILITIES_TUW_USER"
+    ),
 )
 
 option_pid_type = click.option(
