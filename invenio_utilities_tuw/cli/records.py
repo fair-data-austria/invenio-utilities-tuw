@@ -71,7 +71,10 @@ def list_records(user):
     "--patch/--replace",
     "-P/-R",
     default=False,
-    help="replace the record's metadata entirely, or leave unmentioned fields as-is (default: replace)",
+    help=(
+        "replace the record's metadata entirely, or leave unmentioned fields as-is "
+        "(default: replace)"
+    ),
 )
 @option_owners
 @with_appcontext

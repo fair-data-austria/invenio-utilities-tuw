@@ -156,7 +156,10 @@ def create_draft(metadata_path, publish, user, owners, vanity_pid):
     "--patch/--replace",
     "-P/-R",
     default=False,
-    help="replace the draft's metadata entirely, or leave unmentioned fields as-is (default: replace)",
+    help=(
+        "replace the draft's metadata entirely, or leave unmentioned fields as-is "
+        "(default: replace)"
+    ),
 )
 @option_owners
 @with_appcontext

@@ -45,7 +45,10 @@ option_pid_values = click.option(
     metavar="PID_VALUE",
     required=False,
     multiple=True,
-    help="persistent identifier of the object to operate on (can be specified multiple times)",
+    help=(
+        "persistent identifier of the object to operate on "
+        "(can be specified multiple times)"
+    ),
 )
 
 option_owners = click.option(
@@ -75,6 +78,7 @@ option_only_list_active_users = click.option(
     default=True,
     help="show only active users, or list all users",
 )
+
 option_hide_user_roles = click.option(
     "--show-roles/--hide-roles",
     "-r/-R",
