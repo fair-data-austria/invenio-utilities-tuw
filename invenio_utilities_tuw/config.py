@@ -10,13 +10,10 @@
 
 from invenio_rdm_records.proxies import current_rdm_records
 
-
 UTILITIES_TUW_BASE_TEMPLATE = "invenio_utilities_tuw/base.html"
 """Default base template for the demo page."""
 
-UTILITIES_TUW_RECORD_SERVICE_FACTORY = (
-    lambda: current_rdm_records.records_service
-)
+UTILITIES_TUW_RECORD_SERVICE_FACTORY = lambda: current_rdm_records.records_service
 """Factory function for creating a RecordService."""
 
 UTILITIES_TUW_RECORD_FILES_SERVICE_FACTORY = (
