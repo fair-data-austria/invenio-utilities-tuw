@@ -15,6 +15,8 @@ from .utils import (
     create_record_from_metadata,
     get_identity_for_user,
     patch_metadata,
+    read_metadata,
+    set_record_owners,
 )
 
 option_as_user = click.option(
@@ -41,6 +43,15 @@ option_pid_value = click.option(
     metavar="PID_VALUE",
     required=True,
     help="persistent identifier of the record draft to operate on",
+)
+option_owners = click.option(
+    "--owner",
+    "-o",
+    "owners",
+    metavar="OWNER",
+    required=False,
+    multiple=True,
+    help="email address of the record owner to set (can be specified multiple times)",
 )
 
 
@@ -83,8 +94,9 @@ def list_drafts(user):
     default=False,
     help="publish the draft after creation (default: false)",
 )
+@option_owners
 @with_appcontext
-def create_draft(metadata_path, publish, user):
+def create_draft(metadata_path, publish, user, owners):
     """Create a new record draft with the specified metadata.
 
     The specified metadata path can either point to a JSON file containing the metadata,
@@ -97,9 +109,15 @@ def create_draft(metadata_path, publish, user):
     """
     recid = None
     identity = get_identity_for_user(user)
+    if owners:
+        owners = [get_identity_for_user(owner) for owner in owners]
 
     if isfile(metadata_path):
-        draft = create_record_from_metadata(metadata_path, identity)
+        metadata = read_metadata(metadata_path)
+        if owners:
+            metadata = set_record_owners(metadata, owners)
+
+        draft = create_record_from_metadata(metadata, identity)
         recid = draft["id"]
 
     elif isdir(metadata_path):
@@ -108,7 +126,11 @@ def create_draft(metadata_path, publish, user):
         if not isfile(metadata_file_path):
             raise Exception("metadata file does not exist: %s" % metadata_file_path)
 
-        draft = create_record_from_metadata(metadata_file_path, identity)
+        metadata = read_metadata(metadata_file_path)
+        if owners:
+            metadata = set_record_owners(metadata, owners)
+
+        draft = create_record_from_metadata(metadata, identity)
         recid = draft["id"]
         file_names = []
         if isdir(deposit_files_path):
@@ -155,8 +177,9 @@ def create_draft(metadata_path, publish, user):
     default=False,
     help="replace the draft's metadata entirely, or leave unmentioned fields as-is (default: replace)",
 )
+@option_owners
 @with_appcontext
-def update_draft(metadata_file, pid, pid_type, user, patch):
+def update_draft(metadata_file, pid, pid_type, user, patch, owners):
     """Update the specified draft's metadata."""
     pid = convert_to_recid(pid, pid_type)
     identity = get_identity_for_user(user)
@@ -166,6 +189,10 @@ def update_draft(metadata_file, pid, pid_type, user, patch):
     if patch:
         draft_data = service.read_draft(id_=pid, identity=identity).data.copy()
         metadata = patch_metadata(draft_data, metadata)
+
+    if owners:
+        owners = [get_identity_for_user(owner) for owner in owners]
+        metadata = set_record_owners(metadata, owners)
 
     service.update_draft(id_=pid, identity=identity, data=metadata)
     click.secho(pid, fg="green")

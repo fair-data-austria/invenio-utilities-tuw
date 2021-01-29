@@ -12,6 +12,7 @@ from .utils import (
     get_identity_for_user,
     get_object_uuid,
     patch_metadata,
+    set_record_owners,
 )
 
 option_as_user = click.option(
@@ -47,6 +48,15 @@ option_pid_values = click.option(
     required=False,
     multiple=True,
     help="persistent identifier of the record to operate on (can be specified multiple times)",
+)
+option_owners = click.option(
+    "--owner",
+    "-o",
+    "owners",
+    metavar="OWNER",
+    required=False,
+    multiple=True,
+    help="email address of the record owner to set (can be specified multiple times)",
 )
 
 
@@ -92,8 +102,9 @@ def list_records(user):
     default=False,
     help="replace the record's metadata entirely, or leave unmentioned fields as-is (default: replace)",
 )
+@option_owners
 @with_appcontext
-def update_record(metadata_file, pid, pid_type, user, patch):
+def update_record(metadata_file, pid, pid_type, user, patch, owners):
     """Update the specified draft's metadata."""
     pid = convert_to_recid(pid, pid_type)
     identity = get_identity_for_user(user)
@@ -103,6 +114,10 @@ def update_record(metadata_file, pid, pid_type, user, patch):
     if patch:
         record_data = service.read(id_=pid, identity=identity).data.copy()
         metadata = patch_metadata(record_data, metadata)
+
+    if owners:
+        owners = [get_identity_for_user(owner) for owner in owners]
+        metadata = set_record_owners(metadata, owners)
 
     service.update(id_=pid, identity=identity, data=metadata)
     click.secho(pid, fg="green")

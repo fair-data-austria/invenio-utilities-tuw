@@ -11,8 +11,8 @@ from invenio_pidstore.models import PersistentIdentifier
 from ..utils import get_record_service
 
 
-def create_record_from_metadata(metadata_file_path, identity):
-    """Create a draft from the metadata in the specified JSON file."""
+def read_metadata(metadata_file_path):
+    """Read the record metadata from the specified JSON file."""
     metadata = None
     with open(metadata_file_path, "r") as metadata_file:
         metadata = json.load(metadata_file)
@@ -20,6 +20,9 @@ def create_record_from_metadata(metadata_file_path, identity):
     if metadata is None:
         raise Exception("not a valid json file: %s" % metadata_file_path)
 
+
+def create_record_from_metadata(metadata, identity):
+    """Create a draft from the specified metadata."""
     service = get_record_service()
     draft = service.create(identity=identity, data=metadata)
     return draft
@@ -81,3 +84,15 @@ def convert_to_recid(pid_value, pid_type):
         pid_value = query.first().pid_value
 
     return pid_value
+
+
+def set_record_owners(record_metadata, owners):
+    """Set the record's owners, assuming an RDM-Records metadata schema."""
+    metadata = record_metadata.copy()
+
+    owners = [owner.id for owner in owners]
+    if "access" not in metadata:
+        metadata["access"] = {}
+
+    metadata["access"]["owned_by"] = owners
+    return metadata
