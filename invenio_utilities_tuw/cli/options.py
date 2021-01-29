@@ -58,6 +58,15 @@ option_owners = click.option(
     help="email address of the record owner to set (can be specified multiple times)",
 )
 
+option_vanity_pid = click.option(
+    "--vanity-pid",
+    "-V",
+    "vanity_pid",
+    metavar="PID_VALUE",
+    required=False,
+    help="vanity PID, to assign to the object (not recommended)",
+)
+
 # user management options
 
 option_only_list_active_users = click.option(

@@ -18,7 +18,13 @@ from flask.cli import with_appcontext
 from invenio_files_rest.models import ObjectVersion
 
 from ..utils import get_draft_file_service, get_record_service
-from .options import option_as_user, option_owners, option_pid_type, option_pid_value
+from .options import (
+    option_as_user,
+    option_owners,
+    option_pid_type,
+    option_pid_value,
+    option_vanity_pid,
+)
 from .utils import (
     convert_to_recid,
     create_record_from_metadata,
@@ -69,8 +75,9 @@ def list_drafts(user):
     help="publish the draft after creation (default: false)",
 )
 @option_owners
+@option_vanity_pid
 @with_appcontext
-def create_draft(metadata_path, publish, user, owners):
+def create_draft(metadata_path, publish, user, owners, vanity_pid):
     """Create a new record draft with the specified metadata.
 
     The specified metadata path can either point to a JSON file containing the metadata,
@@ -91,7 +98,7 @@ def create_draft(metadata_path, publish, user, owners):
         if owners:
             metadata = set_record_owners(metadata, owners)
 
-        draft = create_record_from_metadata(metadata, identity)
+        draft = create_record_from_metadata(metadata, identity, vanity_pid=vanity_pid)
         recid = draft["id"]
 
     elif isdir(metadata_path):

@@ -14,6 +14,7 @@ from flask_principal import Identity
 from invenio_access import any_user
 from invenio_access.utils import get_identity
 from invenio_accounts import current_accounts
+from invenio_db import db
 from invenio_pidstore.models import PersistentIdentifier
 
 from ..utils import get_record_service
@@ -31,10 +32,36 @@ def read_metadata(metadata_file_path):
     return metadata
 
 
-def create_record_from_metadata(metadata, identity):
+def create_record_from_metadata(
+    metadata, identity, vanity_pid=None, vanity_pid_type="recid"
+):
     """Create a draft from the specified metadata."""
     service = get_record_service()
+
+    if vanity_pid is not None:
+        # check if the vanity PID is already taken, before doing anything stupid
+        count = PersistentIdentifier.query.filter_by(
+            pid_value=vanity_pid, pid_type=vanity_pid_type
+        ).count()
+
+        if count > 0:
+            raise Exception(
+                "PID '{}:{}' is already taken".format(vanity_pid_type, vanity_pid)
+            )
+
     draft = service.create(identity=identity, data=metadata)
+    actual_draft = draft._record if hasattr(draft, "_record") else draft
+
+    if vanity_pid:
+        # service.update_draft() is called to update the IDs in the record's metadata
+        # (via record.commit()), re-index the record, and commit the db session
+        if service.indexer:
+            service.indexer.delete(actual_draft)
+
+        actual_draft.pid.pid_value = vanity_pid
+        db.session.commit()
+        draft = service.update_draft(vanity_pid, identity=identity, data=metadata)
+
     return draft
 
 
