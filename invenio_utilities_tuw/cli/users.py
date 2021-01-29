@@ -12,6 +12,8 @@ import click
 from flask.cli import with_appcontext
 from invenio_accounts.models import User
 
+from .options import option_hide_user_roles, option_only_list_active_users
+
 
 @click.group()
 def users():
@@ -20,18 +22,8 @@ def users():
 
 
 @users.command("list")
-@click.option(
-    "--only-active/--include-inactive",
-    "-a/-A",
-    default=True,
-    help="show only active users, or list all users",
-)
-@click.option(
-    "--show-roles/--hide-roles",
-    "-r/-R",
-    default=False,
-    help="show or hide the roles associated with the users",
-)
+@option_only_list_active_users
+@option_hide_user_roles
 @with_appcontext
 def list_users(only_active, show_roles):
     """List registered users."""

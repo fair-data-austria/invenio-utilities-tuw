@@ -18,6 +18,7 @@ from flask.cli import with_appcontext
 from invenio_files_rest.models import ObjectVersion
 
 from ..utils import get_draft_file_service, get_record_service
+from .options import option_as_user, option_owners, option_pid_type, option_pid_value
 from .utils import (
     convert_to_recid,
     create_record_from_metadata,
@@ -25,41 +26,6 @@ from .utils import (
     patch_metadata,
     read_metadata,
     set_record_owners,
-)
-
-option_as_user = click.option(
-    "--as-user",
-    "-u",
-    "user",
-    metavar="USER",
-    default=None,
-    required=True,
-    help="email address of the user to use for record creation",
-)
-option_pid_type = click.option(
-    "--type",
-    "-t",
-    "pid_type",
-    metavar="PID_TYPE",
-    default="recid",
-    help="pid type (default: 'recid')",
-)
-option_pid_value = click.option(
-    "--pid",
-    "-p",
-    "pid",
-    metavar="PID_VALUE",
-    required=True,
-    help="persistent identifier of the record draft to operate on",
-)
-option_owners = click.option(
-    "--owner",
-    "-o",
-    "owners",
-    metavar="OWNER",
-    required=False,
-    multiple=True,
-    help="email address of the record owner to set (can be specified multiple times)",
 )
 
 

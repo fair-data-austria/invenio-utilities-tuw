@@ -15,56 +15,19 @@ from flask.cli import with_appcontext
 from invenio_files_rest.models import ObjectVersion
 
 from ..utils import get_record_file_service, get_record_service
+from .options import (
+    option_as_user,
+    option_owners,
+    option_pid_type,
+    option_pid_value,
+    option_pid_values,
+)
 from .utils import (
     convert_to_recid,
     get_identity_for_user,
     get_object_uuid,
     patch_metadata,
     set_record_owners,
-)
-
-option_as_user = click.option(
-    "--as-user",
-    "-u",
-    "user",
-    metavar="USER",
-    default=None,
-    required=True,
-    help="email address of the user to use for record creation",
-)
-option_pid_type = click.option(
-    "--type",
-    "-t",
-    "pid_type",
-    metavar="PID_TYPE",
-    default="recid",
-    help="pid type (default: 'recid')",
-)
-option_pid_value = click.option(
-    "--pid",
-    "-p",
-    "pid",
-    metavar="PID_VALUE",
-    required=True,
-    help="persistent identifier of the record to operate on",
-)
-option_pid_values = click.option(
-    "--pid",
-    "-p",
-    "pids",
-    metavar="PID_VALUE",
-    required=False,
-    multiple=True,
-    help="persistent identifier of the record to operate on (can be specified multiple times)",
-)
-option_owners = click.option(
-    "--owner",
-    "-o",
-    "owners",
-    metavar="OWNER",
-    required=False,
-    multiple=True,
-    help="email address of the record owner to set (can be specified multiple times)",
 )
 
 

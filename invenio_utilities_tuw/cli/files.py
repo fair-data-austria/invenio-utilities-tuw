@@ -14,35 +14,10 @@ import click
 from flask.cli import with_appcontext
 from invenio_db import db
 from invenio_files_rest.models import Bucket, FileInstance, ObjectVersion
-from invenio_rdm_records.records.models import DraftMetadata, RecordMetadata
 
 from ..utils import get_record_service
+from .options import option_as_user, option_pid_type, option_pid_value
 from .utils import convert_to_recid, get_identity_for_user
-
-option_as_user = click.option(
-    "--as-user",
-    "-u",
-    "user",
-    metavar="USER",
-    default=None,
-    required=True,
-    help="email address of the user to use for record creation",
-)
-option_pid_type = click.option(
-    "--type",
-    "-t",
-    "pid_type",
-    metavar="PID_TYPE",
-    default="recid",
-    help="pid type (default: 'recid')",
-)
-option_pid_value = click.option(
-    "--pid",
-    "-p",
-    "pid",
-    metavar="PID_VALUE",
-    help="persistent identifier of the record draft to operate on",
-)
 
 
 @click.group()
@@ -157,10 +132,14 @@ def list_orphan_files():
     """List files that aren't referenced in any records (anymore)."""
     # TODO iterate over all records & drafts, get their buckets
     #      and check which buckets from the db aren't listed
+    service = get_record_service()
+    record_model_cls = service.record_cls.model_cls
+    draft_model_cls = service.draft_cls.model_cls
+
     bucket_ids = set(
         (
             r.bucket.id
-            for r in (RecordMetadata.query.all() + DraftMetadata.query.all())
+            for r in (record_model_cls.query.all() + draft_model_cls.query.all())
             if r.bucket is not None
         )
     )
