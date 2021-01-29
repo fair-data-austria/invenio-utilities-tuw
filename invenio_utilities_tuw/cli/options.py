@@ -75,6 +75,15 @@ option_vanity_pid = click.option(
     help="vanity PID, to assign to the object (not recommended)",
 )
 
+option_pretty_print = click.option(
+    "--pretty-print",
+    "-P",
+    "pretty_print",
+    default=False,
+    is_flag=True,
+    help="pretty-print the result",
+)
+
 # user management options
 
 option_only_list_active_users = click.option(

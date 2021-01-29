@@ -21,6 +21,7 @@ from .options import (
     option_pid_type,
     option_pid_value,
     option_pid_values,
+    option_pretty_print,
 )
 from .utils import (
     convert_to_recid,
@@ -60,6 +61,23 @@ def list_records(user):
             )
         except:
             raise
+
+
+@records.command("show")
+@option_pid_value
+@option_pid_type
+@option_as_user
+@option_pretty_print
+@with_appcontext
+def show_record(pid, pid_type, user, pretty_print):
+    """Show the stored data for the specified draft."""
+    pid = convert_to_recid(pid, pid_type)
+    identity = get_identity_for_user(user)
+    service = get_record_service()
+    record = service.read(id_=pid, identity=identity)
+    indent = 2 if pretty_print else None
+    data = json.dumps(record.data, indent=indent)
+    click.echo(data)
 
 
 @records.command("update")

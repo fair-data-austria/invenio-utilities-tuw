@@ -23,6 +23,7 @@ from .options import (
     option_owners,
     option_pid_type,
     option_pid_value,
+    option_pretty_print,
     option_vanity_pid,
 )
 from .utils import (
@@ -145,6 +146,23 @@ def create_draft(metadata_path, publish, user, owners, vanity_pid):
         service.publish(id_=recid, identity=identity)
 
     click.secho(recid, fg="green")
+
+
+@drafts.command("show")
+@option_pid_value
+@option_pid_type
+@option_as_user
+@option_pretty_print
+@with_appcontext
+def show_draft(pid, pid_type, user, pretty_print):
+    """Show the stored data for the specified draft."""
+    pid = convert_to_recid(pid, pid_type)
+    identity = get_identity_for_user(user)
+    service = get_record_service()
+    draft = service.read_draft(id_=pid, identity=identity)
+    indent = 2 if pretty_print else None
+    data = json.dumps(draft.data, indent=indent)
+    click.echo(data)
 
 
 @drafts.command("update")
