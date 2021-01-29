@@ -317,3 +317,32 @@ def list_files(pid, pid_type, user):
         ov = ObjectVersion.get(f["bucket_id"], f["key"], f["version_id"])
         fi = ov.file
         click.secho("{}\t{}\t{}".format(ov.key, fi.uri, fi.checksum), fg="green")
+
+
+@files.command("verify")
+@option_pid_value
+@option_pid_type
+@option_as_user
+@with_appcontext
+def verify_files(pid, pid_type, user):
+    """Verify the checksums for each of the draft's files."""
+    recid = convert_to_recid(pid, pid_type)
+    identity = get_identity_for_user(user)
+    service = get_record_service()
+    service.require_permission(identity, "read_files")
+    draft = service.read_draft(id_=recid, identity=identity)
+    draft = draft._record if hasattr(draft, "_record") else draft
+    num_errors = 0
+
+    for name, rec_file in draft.files.entries.items():
+        if rec_file.file.verify_checksum():
+            click.secho(name, fg="green")
+        else:
+            click.secho("{}: failed checksum verification".format(name), fg="red")
+            num_errors += 1
+
+    if num_errors > 0:
+        click.secho(
+            "{} files failed the checksum verification".format(num_errors), fg="red"
+        )
+        sys.exit(1)

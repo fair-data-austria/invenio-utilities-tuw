@@ -9,6 +9,7 @@
 """Management commands for records."""
 
 import json
+import sys
 
 import click
 from flask.cli import with_appcontext
@@ -131,7 +132,13 @@ def delete_record(pid, pid_type, user):
     click.secho(recid, fg="red")
 
 
-@records.command("files")
+@records.group()
+def files():
+    """Manage files deposited with the record."""
+    pass
+
+
+@files.command("list")
 @option_pid_value
 @option_pid_type
 @option_as_user
@@ -146,6 +153,35 @@ def list_files(pid, pid_type, user):
         ov = ObjectVersion.get(f["bucket_id"], f["key"], f["version_id"])
         fi = ov.file
         click.secho("{}\t{}\t{}".format(ov.key, fi.uri, fi.checksum), fg="green")
+
+
+@files.command("verify")
+@option_pid_value
+@option_pid_type
+@option_as_user
+@with_appcontext
+def verify_files(pid, pid_type, user):
+    """Verify the checksums for each of the record's files."""
+    recid = convert_to_recid(pid, pid_type)
+    identity = get_identity_for_user(user)
+    service = get_record_file_service()
+    service.require_permission(identity, "read_files")
+    record = service.read(id_=recid, identity=identity)
+    record = record._record if hasattr(record, "_record") else record
+    num_errors = 0
+
+    for name, rec_file in record.files.entries.items():
+        if rec_file.file.verify_checksum():
+            click.secho(name, fg="green")
+        else:
+            click.secho("{}: failed checksum verification".format(name), fg="red")
+            num_errors += 1
+
+    if num_errors > 0:
+        click.secho(
+            "{} files failed the checksum verification".format(num_errors), fg="red"
+        )
+        sys.exit(1)
 
 
 @records.command("reindex")
