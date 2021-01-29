@@ -28,6 +28,8 @@ def read_metadata(metadata_file_path):
     if metadata is None:
         raise Exception("not a valid json file: %s" % metadata_file_path)
 
+    return metadata
+
 
 def create_record_from_metadata(metadata, identity):
     """Create a draft from the specified metadata."""
