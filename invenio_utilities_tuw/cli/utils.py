@@ -127,7 +127,7 @@ def set_record_owners(record_metadata, owners):
     """Set the record's owners, assuming an RDM-Records metadata schema."""
     metadata = record_metadata.copy()
 
-    owners = [owner.id for owner in owners]
+    owners = [{"user": owner.id} for owner in owners]
     if "access" not in metadata:
         metadata["access"] = {}
 
