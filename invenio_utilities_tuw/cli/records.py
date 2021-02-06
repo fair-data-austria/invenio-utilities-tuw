@@ -29,6 +29,7 @@ from .utils import (
     get_identity_for_user,
     get_object_uuid,
     patch_metadata,
+    set_creatibutor_names,
     set_record_owners,
 )
 
@@ -112,6 +113,7 @@ def update_record(metadata_file, pid, pid_type, user, patch, owners):
         owners = [get_identity_for_user(owner) for owner in owners]
         metadata = set_record_owners(metadata, owners)
 
+    metadata = set_creatibutor_names(metadata)
     service.update(id_=pid, identity=identity, data=metadata)
     click.secho(pid, fg="green")
 

@@ -32,6 +32,7 @@ from .utils import (
     get_identity_for_user,
     patch_metadata,
     read_metadata,
+    set_creatibutor_names,
     set_record_owners,
 )
 
@@ -99,6 +100,7 @@ def create_draft(metadata_path, publish, user, owners, vanity_pid):
         if owners:
             metadata = set_record_owners(metadata, owners)
 
+        metadata = set_creatibutor_names(metadata)
         draft = create_record_from_metadata(metadata, identity, vanity_pid=vanity_pid)
         recid = draft["id"]
 
@@ -112,6 +114,7 @@ def create_draft(metadata_path, publish, user, owners, vanity_pid):
         if owners:
             metadata = set_record_owners(metadata, owners)
 
+        metadata = set_creatibutor_names(metadata)
         draft = create_record_from_metadata(metadata, identity)
         recid = draft["id"]
         file_names = []
@@ -196,6 +199,7 @@ def update_draft(metadata_file, pid, pid_type, user, patch, owners):
         owners = [get_identity_for_user(owner) for owner in owners]
         metadata = set_record_owners(metadata, owners)
 
+    metadata = set_creatibutor_names(metadata)
     service.update_draft(id_=pid, identity=identity, data=metadata)
     click.secho(pid, fg="green")
 

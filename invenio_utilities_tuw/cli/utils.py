@@ -133,3 +133,28 @@ def set_record_owners(record_metadata, owners):
 
     metadata["access"]["owned_by"] = owners
     return metadata
+
+
+def _set_creatibutor_name(creatibutor):
+    """Set the name from the given_name and family_name from the creator/contributor."""
+    creatibutor = creatibutor.get("person_or_org", {})
+    name = creatibutor.get("name")
+
+    if not name:
+        given_name = creatibutor.get("given_name")
+        family_name = creatibutor.get("family_name")
+        if given_name and family_name:
+            creatibutor["name"] = "{}, {}".format(family_name, given_name)
+
+
+def set_creatibutor_names(record_metadata):
+    """Set the name field for each creator and contributor if they're not set."""
+    metadata = record_metadata.copy()
+
+    for creator in metadata.get("metadata", {}).get("creators", []):
+        _set_creatibutor_name(creator)
+
+    for contributor in metadata.get("metadata", {}).get("contributors", []):
+        _set_creatibutor_name(contributor)
+
+    return metadata
